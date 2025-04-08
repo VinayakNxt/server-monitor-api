@@ -1,14 +1,21 @@
 // openai/summarize.js
 const axios = require("axios");
-require("dotenv").config();
+require("dotenv").config(); // Load environment variables from .env file
 
+// Retrieve Azure OpenAI API endpoint and API key from environment variables
 const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
 const apiKey = process.env.AZURE_OPENAI_KEY;
 
+/**
+ * Summarizes server metrics using the Azure OpenAI API.
+ * @param {Array} metrics - Array of server metrics objects.
+ * @returns {Promise<string>} - A detailed summary and recommendations based on the metrics.
+ */
 async function summarizeMetrics(metrics) {
   // Step 1: Prepare the metrics for OpenAI API
   let metricsText = "Raw Server Metrics:\n";
   metrics.forEach((metric) => {
+    // Format each metric into a readable text block
     metricsText += `
       Timestamp: ${metric.timestamp}
       Server Hostname: ${metric.server_hostname}
@@ -38,6 +45,7 @@ async function summarizeMetrics(metrics) {
     `;
   });
 
+  // Construct the prompt for the OpenAI API
   const prompt = `
     You are a server performance assistant specialized in infrastructure optimization. I am providing you with detailed server health metrics collected every 30 minutes over a one-week period for the following server. Please analyze this data and provide the following:
 
@@ -73,6 +81,7 @@ async function summarizeMetrics(metrics) {
     Please provide a detailed and structured response with specific numerical thresholds in your recommendations, and prioritize suggestions based on severity and potential impact. Ensure clarity in your insights and offer actionable next steps for each area of improvement.
   `;
 
+  // Prepare the request payload for the OpenAI API
   const data = {
     messages: [
       {
@@ -87,6 +96,7 @@ async function summarizeMetrics(metrics) {
   };
 
   try {
+    // Send the request to the Azure OpenAI API
     const res = await axios.post(endpoint, data, {
       headers: {
         "Content-Type": "application/json",
@@ -97,9 +107,11 @@ async function summarizeMetrics(metrics) {
     // Return the generated summary, recommendations, and optimizations
     return res.data.choices[0].message.content;
   } catch (err) {
+    // Log and return an error message if the API call fails
     console.error("❌ OpenAI API error:", err.response?.data || err.message);
     return "Sorry, something went wrong while generating the summary and recommendations.";
   }
 }
 
+// Export the summarizeMetrics function for use in other modules
 module.exports = summarizeMetrics;

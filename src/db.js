@@ -1,28 +1,43 @@
 // src/db.js
+
+// Import the 'pg' module to interact with PostgreSQL
 const { Client } = require('pg');
-require('dotenv').config(); // Load environment variables from .env file
+
+// Load environment variables from a .env file
+require('dotenv').config(); 
 
 // PostgreSQL client setup using environment variables
 const client = new Client({
-  host: process.env.DB_HOST,  // Use DB_HOST from .env
-  port: process.env.DB_PORT,  // Use DB_PORT from .env
-  user: process.env.DB_USER,  // Use DB_USER from .env
-  password: process.env.DB_PASSWORD, // Use DB_PASSWORD from .env
-  database: process.env.DB_NAME, // Use DB_NAME from .env
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,  // SSL connection
+  host: process.env.DB_HOST,  // Database host (e.g., localhost or remote server)
+  port: process.env.DB_PORT,  // Database port (default for PostgreSQL is 5432)
+  user: process.env.DB_USER,  // Database username
+  password: process.env.DB_PASSWORD, // Database password
+  database: process.env.DB_NAME, // Database name
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,  // Enable SSL if DB_SSL is 'true'
 });
 
 // Function to fetch server metrics from the database
 async function fetchMetricsFromDB() {
   try {
+    // Connect to the PostgreSQL database
     await client.connect();
-    const res = await client.query('SELECT * FROM metrics');  // Replace with your actual table name
+
+    // Execute a query to fetch all rows from the 'metrics' table
+    const res = await client.query('SELECT * FROM metrics');  // Replace 'metrics' with your actual table name
+
+    // Close the database connection
     await client.end();
-    return res.rows; // Return the data as an array of rows
+
+    // Return the fetched rows as an array
+    return res.rows;
   } catch (err) {
+    // Log any errors that occur during the database operation
     console.error('Error fetching data from DB:', err);
+
+    // Return an empty array in case of an error
     return [];
   }
 }
 
+// Export the fetchMetricsFromDB function for use in other modules
 module.exports = { fetchMetricsFromDB };
