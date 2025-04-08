@@ -1,59 +1,75 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const cron = require("node-cron");  // Importing node-cron for cron job scheduling
-require("dotenv").config();  // Loading environment variables from .env file
+const cron = require("node-cron");
+require("dotenv").config();
 
-// Importing route for handling summary-related API requests
 const summaryRoute = require("./routes/summary.route");
-
-// Importing the summarize function to generate summaries using OpenAI
 const summarizeMetrics = require("./openai/summarize");
+const { fetchMetricsFromDB, closeConnection } = require('./src/db');
 
-// Importing function to fetch metrics data from the database (e.g., Supabase)
-const { fetchMetricsFromDB } = require('./src/db');
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-const app = express();  // Initialize Express application
-const PORT = 3000;  // Define the port the server will listen on
-
-// Middleware to parse incoming JSON requests
+// Middleware
 app.use(bodyParser.json());
-
-// Route all API requests starting with "/api" to the summary route
 app.use("/api", summaryRoute);
 
-// Root endpoint to check if the server is running
+// Root endpoint
 app.get("/", (req, res) => res.send("Server Monitor API Running ✅"));
 
-/**
- * Cron Job Setup
- * This job runs every Sunday at 12:00 PM (Noon) and generates the weekly summary.
- */
-cron.schedule('0 12 * * 0', async () => { // Cron expression: Runs every Sunday at 12:00 PM
+// Weekly metrics summary cron job
+const cronJob = cron.schedule('0 12 * * 0', async () => {
+  console.log("Starting the weekly server metrics summary...");
+  
   try {
-    console.log("Starting the weekly server metrics summary...");
-
-    // Fetch metrics data from the database
     const metrics = await fetchMetricsFromDB();
     
-    // Check if there is any data to summarize
-    if (metrics.length === 0) {
+    if (!metrics || metrics.length === 0) {
       console.log('No metrics data found to summarize.');
-      return;  // Exit if no data is available
+      return;
     }
 
-    // Generate a summary using the OpenAI API
-    const summary = await summarizeMetrics(metrics);
-
-    // Log the generated summary or take further actions (e.g., send via email)
-    console.log("Summary Generated Successfully:");
-    console.log(summary);  // Output the summary
+    const summaryResult = await summarizeMetrics(metrics);
+    console.log("Summary Generated Successfully:", summaryResult);
   } catch (error) {
-    // Log any errors that occur during the summary generation process
-    console.error("Error generating summary:", error);
+    console.error("Error in cron job:", error.message);
   }
 });
 
-// Start the server and listen on the specified port
-app.listen(PORT, () => {
+// Graceful shutdown handler
+async function gracefulShutdown(signal) {
+  console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
+  
+  // Stop accepting new requests
+  server.close(async () => {
+    console.log('HTTP server closed.');
+    
+    try {
+      // Stop the cron job
+      cronJob.stop();
+      console.log('Cron job stopped.');
+      
+      // Close database connection
+      await closeConnection();
+      console.log('Database connection closed.');
+      
+      process.exit(0);
+    } catch (error) {
+      console.error('Error during shutdown:', error);
+      process.exit(1);
+    }
+  });
+}
+
+// Start server
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
+});
+
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  gracefulShutdown('uncaughtException');
 });

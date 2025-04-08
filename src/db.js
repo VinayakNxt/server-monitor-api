@@ -16,11 +16,27 @@ const client = new Client({
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,  // Enable SSL if DB_SSL is 'true'
 });
 
+// Initialize connection state
+let isConnected = false;
+
+// Function to ensure database connection
+async function ensureConnection() {
+  if (!isConnected) {
+    try {
+      await client.connect();
+      isConnected = true;
+    } catch (err) {
+      console.error('Error connecting to database:', err);
+      throw err;
+    }
+  }
+}
+
 // Function to fetch server metrics from the database
 async function fetchMetricsFromDB() {
   try {
     // Connect to the PostgreSQL database
-    await client.connect();
+    await ensureConnection();
 
     // Execute a query to fetch all rows from the 'metrics' table
     const res = await client.query('SELECT * FROM metrics');  // Replace 'metrics' with your actual table name
@@ -39,5 +55,16 @@ async function fetchMetricsFromDB() {
   }
 }
 
+async function closeConnection() {
+  if (isConnected) {
+    try {
+      await client.end();
+      isConnected = false;
+    } catch (err) {
+      console.error('Error closing database connection:', err);
+    }
+  }
+}
+
 // Export the fetchMetricsFromDB function for use in other modules
-module.exports = { fetchMetricsFromDB };
+module.exports = { fetchMetricsFromDB, closeConnection };
