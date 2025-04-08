@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-
+const path = require('path');
 require('dotenv').config();
 
 // Create a transporter using the credentials from the .env file
@@ -18,15 +18,25 @@ const transporter = nodemailer.createTransport({
 });
 
 // Function to send an email
-async function sendMail(to, subject, text, html) {
+async function sendMail(to, subject, text, html, attachmentPath = null) {
     try {
         const mailOptions = {
             from: process.env.MAIL_USER,
-            to,
-            subject,
-            text,
-            html,
+            to: to,
+            subject: subject,
+            text: text,
+            html: html
         };
+        
+        // Only add attachment if a path was provided
+        if (attachmentPath) {
+            mailOptions.attachments = [
+                {
+                    filename: path.basename(attachmentPath),
+                    path: attachmentPath
+                }
+            ];
+        }
 
         const info = await transporter.sendMail(mailOptions);
         console.log('Email sent: ', info.messageId);

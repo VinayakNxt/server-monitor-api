@@ -1,9 +1,10 @@
-// openai/summarize.js
 const axios = require("axios");
 require("dotenv").config();
 const sendMail = require("./mail"); // Assuming mail.js is in the same directory
-const fs = require('fs').promises;
-const path = require('path');
+const fs = require("fs").promises;
+const fsSync = require("fs");
+const path = require("path");
+const { jsPDF } = require("jspdf"); // Import jsPDF for PDF generation
 
 // Retrieve Azure OpenAI API endpoint and API key from environment variables
 const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
@@ -19,12 +20,13 @@ async function summarizeMetrics(metrics, options = {}) {
   const config = {
     saveReport: true,
     emailReport: true,
-    ...options
+    ...options,
   };
 
   // Step 1: Prepare the metrics for OpenAI API
   let metricsText = "Raw Server Metrics:\n";
-  metrics.slice(0,200).forEach((metric) => {
+  metrics.slice(0, 400).forEach((metric) => {
+    // Format each metric into a readable text block
     metricsText += `
       Timestamp: ${metric.timestamp}
       Server Hostname: ${metric.server_hostname}
@@ -125,14 +127,16 @@ async function summarizeMetrics(metrics, options = {}) {
     });
 
     // Safely extract the summary
-    const summary = res.data.choices[0]?.message?.content || 
-                    "No summary was generated. Please check the API response.";
+    const summary =
+      res.data.choices[0]?.message?.content ||
+      "No summary was generated. Please check the API response.";
 
     // Prepare report results
     const reportResults = {
       summary,
       htmlReportPath: null,
-      emailSent: false
+      emailSent: false,
+      pdfPath: null,
     };
 
     // Generate HTML report if saving is enabled
@@ -140,6 +144,13 @@ async function summarizeMetrics(metrics, options = {}) {
       reportResults.htmlReportPath = await generateHTMLReport(summary);
     }
 
+    try {
+      reportResults.pdfPath = await generatePDFReport(summary);
+      console.log(`PDF report generated successfully at: ${reportResults.pdfPath}`);
+    } catch (pdfError) {
+      console.error(`Failed to generate PDF report: ${pdfError.message}`);
+      reportResults.pdfPath = null; // Set to null to indicate failure
+    }
     // Send email if enabled
     if (config.emailReport) {
       // Get HTML content for email
@@ -150,7 +161,8 @@ async function summarizeMetrics(metrics, options = {}) {
           "vinayak@adaptnxt.com", // Replace with the recipient's email address
           "Server Metrics Summary Report",
           "Please find the detailed server metrics summary report below.",
-          htmlContent
+          htmlContent,
+          reportResults.pdfPath // Attach the PDF file
         );
         reportResults.emailSent = true;
       } catch (emailError) {
@@ -165,13 +177,17 @@ async function summarizeMetrics(metrics, options = {}) {
     console.error("❌ OpenAI API error:", {
       status: err.response?.status,
       data: err.response?.data,
-      message: err.message
+      message: err.message,
     });
-    
+
     // More robust error handling
     if (err.response) {
       // The request was made and the server responded with a status code
-      throw new Error(`API Error: ${err.response.status} - ${JSON.stringify(err.response.data)}`);
+      throw new Error(
+        `API Error: ${err.response.status} - ${JSON.stringify(
+          err.response.data
+        )}`
+      );
     } else if (err.request) {
       // The request was made but no response was received
       throw new Error(`No response received: ${err.message}`);
@@ -234,7 +250,7 @@ async function generateHTMLReport(summary, returnContent = false) {
     <p class="timestamp">Generated on: ${new Date().toLocaleString()}</p>
 
     <div class="section">
-        <pre>${summary.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+        <pre>${summary.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
     </div>
 </body>
 </html>
@@ -246,17 +262,149 @@ async function generateHTMLReport(summary, returnContent = false) {
   }
 
   // Ensure reports directory exists
-  const reportsDir = path.join(__dirname, 'reports');
+  const reportsDir = path.join(__dirname, "reports");
   await fs.mkdir(reportsDir, { recursive: true });
 
   // Generate unique filename
-  const timestamp = new Date().toISOString().replace(/[:\.]/g, '-');
-  const htmlFilePath = path.join(reportsDir, `server-metrics-report-${timestamp}.html`);
-  
+  const timestamp = new Date().toISOString().replace(/[:\.]/g, "-");
+  const htmlFilePath = path.join(
+    reportsDir,
+    `server-metrics-report-${timestamp}.html`
+  );
+
   // Write HTML file
   await fs.writeFile(htmlFilePath, htmlContent);
 
   return htmlFilePath;
 }
-// Export the summarizeMetrics function for use in other modules
+
+async function generatePDFReport(summary, returnContent = false) {
+  // Create a new PDF document
+  const doc = new jsPDF();
+  doc.setFont("helvetica");
+  doc.setFontSize(12);
+
+  // Process the server summaries
+  const serverSections = summary.split('### Server Analysis for').filter(section => section.trim().length > 0);
+
+  serverSections.forEach((section, index) => {
+    if (index > 0) {
+      doc.addPage();
+    }
+
+    const serverNameMatch = section.match(/`([^`]+)`/);
+    const serverName = serverNameMatch ? serverNameMatch[1] : 'Unknown Server';
+
+    // Add title
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0); // Black
+    doc.text(`Server Health Report: ${serverName}`, 20, 20);
+
+    // Add date
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Report generated: ${new Date().toLocaleDateString()}`, 20, 30);
+
+    // Add divider line
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, 35, 190, 35);
+
+    // Process sections of the report
+    let yPosition = 45;
+    const sections = section.split('### ');
+
+    sections.forEach(sec => {
+      if (!sec.trim()) return;
+
+      const sectionTitleMatch = sec.match(/^(\d+\.\s+[^\n]+)/);
+      if (sectionTitleMatch) {
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 51, 102); // Dark blue
+        doc.text(sectionTitleMatch[1], 20, yPosition);
+        yPosition += 10;
+
+        const content = sec.substring(sectionTitleMatch[0].length).trim();
+        const contentLines = doc.splitTextToSize(content, 170);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0, 0, 0); // Black
+
+        contentLines.forEach(line => {
+          if (yPosition > 270) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          doc.text(line, 20, yPosition);
+          yPosition += 7;
+        });
+        yPosition += 10; // Extra space between sections
+      }
+    });
+
+    // Add footer
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(100, 100, 100);
+    doc.text("Confidential - For internal use only", 20, 285);
+  });
+
+  // Generate PDF data
+  const pdfData = doc.output('arraybuffer');
+  
+  // If returning content only, return the buffer directly
+  if (returnContent) {
+    return Buffer.from(pdfData);
+  }
+
+  try {
+    // Ensure reports directory exists - using path.resolve for consistent absolute paths
+    const reportsDir = path.resolve(__dirname, 'reports');
+    console.log(`Creating directory (if needed) at: ${reportsDir}`);
+    
+    await fs.mkdir(reportsDir, { recursive: true });
+    
+    // Generate unique filename with timestamp
+    const timestamp = new Date().toISOString().replace(/[:\.]/g, '-');
+    const pdfFilePath = path.join(reportsDir, `server-health-report-${timestamp}.pdf`);
+    console.log(`Writing PDF to: ${pdfFilePath}`);
+    
+    // Write PDF file
+    await fs.writeFile(pdfFilePath, Buffer.from(pdfData));
+    console.log(`PDF successfully saved to: ${pdfFilePath}`);
+    
+    return pdfFilePath;
+  } catch (error) {
+    // Enhanced error handling with more detail
+    console.error(`❌ PDF generation error: ${error.message}`);
+    console.error(`Error details: ${JSON.stringify({
+      code: error.code,
+      errno: error.errno,
+      syscall: error.syscall,
+      path: error.path
+    })}`);
+    
+    // Try alternative directory as fallback
+    try {
+      const os = require('os');
+      const tempDir = path.join(os.tmpdir(), 'server-reports');
+      console.log(`Attempting fallback to temp directory: ${tempDir}`);
+      
+      await fs.mkdir(tempDir, { recursive: true });
+      
+      const timestamp = new Date().toISOString().replace(/[:\.]/g, '-');
+      const fallbackPath = path.join(tempDir, `server-health-report-${timestamp}.pdf`);
+      
+      await fs.writeFile(fallbackPath, Buffer.from(pdfData));
+      console.log(`PDF saved to fallback location: ${fallbackPath}`);
+      
+      return fallbackPath;
+    } catch (fallbackError) {
+      console.error(`Fallback save also failed: ${fallbackError.message}`);
+      throw new Error(`Failed to save PDF report: ${error.message}`);
+    }
+  }
+}
+
 module.exports = summarizeMetrics;
