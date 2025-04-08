@@ -47,39 +47,50 @@ async function summarizeMetrics(metrics) {
 
   // Construct the prompt for the OpenAI API
   const prompt = `
-    You are a server performance assistant specialized in infrastructure optimization. I am providing you with detailed server health metrics collected every 30 minutes over a one-week period for the following server. Please analyze this data and provide the following:
+  You are a server performance assistant specialized in infrastructure optimization. I am providing you with detailed server health metrics collected every 30 minutes over a one-week period for multiple servers in our infrastructure. Please analyze this data and provide the following for EACH SERVER SEPARATELY:
 
-    1. **Comprehensive Summary**:
-      - **Overall Health**: Provide a high-level overview of the server’s overall health and performance.
-      - **Key Trends**: Summarize the key trends observed in the metrics, including daily/weekly variations in resource usage.
-      - **Critical Usage Peaks**: Highlight any critical peaks in CPU, memory, disk, or network usage that may require attention.
-      - **Stability Assessment**: Assess the stability of the server performance over the given period. Are there noticeable fluctuations or consistent resource exhaustion?
+  ### For Each Server
 
-    2. **Anomalies & Issues**:
-      - **Spikes & Drops**: Identify any sudden spikes or drops in resource usage (CPU, memory, disk, network) and their potential causes.
-      - **Correlated Anomalies**: Correlate anomalies across multiple metrics (e.g., a CPU spike with a memory usage increase). Are there any patterns or repeated events?
-      - **Threshold Approaching**: Identify any metrics that are approaching critical thresholds (e.g., CPU usage over 80%, memory over 90%, disk nearing full capacity).
-      - **Abnormal Network Activity**: Look for unusual network activity, like spikes in incoming/outgoing traffic or too many network connections.
+  1. **Comprehensive Summary**:
+    - **Overall Health**: Provide a high-level overview of this specific server's overall health and performance.
+    - **Key Trends**: Summarize the key trends observed in the metrics, including daily/weekly variations in resource usage.
+    - **Critical Usage Peaks**: Highlight any critical peaks in CPU, memory, disk, or network usage that may require attention.
+    - **Stability Assessment**: Assess the stability of the server performance over the given period. Are there noticeable fluctuations or consistent resource exhaustion?
 
-    3. **Root Cause Diagnosis**:
-      - **Pattern Analysis**: Based on the metrics, what could be the root causes of performance issues? Are there any recurring patterns that point to potential problems (e.g., high load at specific times)?
-      - **Scheduled Jobs or Traffic Impact**: Could scheduled jobs or heavy network traffic be causing temporary performance degradation? 
-      - **Application vs. Infrastructure**: Do the metrics suggest issues at the application level (e.g., inefficient code) or infrastructure level (e.g., insufficient resources)?
-      - **Critical Events**: Are there any isolated critical events or recurring issues that need further investigation?
+  2. **Anomalies & Issues**:
+    - **Spikes & Drops**: Identify any sudden spikes or drops in resource usage (CPU, memory, disk, network) and their potential causes.
+    - **Correlated Anomalies**: Correlate anomalies across multiple metrics (e.g., a CPU spike with a memory usage increase). Are there any patterns or repeated events?
+    - **Threshold Approaching**: Identify any metrics that are approaching critical thresholds (e.g., CPU usage over 80%, memory over 90%, disk nearing full capacity).
+    - **Abnormal Network Activity**: Look for unusual network activity, like spikes in incoming/outgoing traffic or too many network connections.
 
-    4. **Actionable Recommendations**:
-      - **Short-Term Recommendations**: Provide immediate fixes or actions to address any current performance issues. These could include adjustments to server configurations, stopping resource-heavy processes, or offloading tasks.
-      - **Medium-Term Optimizations**: Suggest optimizations for resource utilization, such as optimizing memory management, disk cleanup, or network traffic handling.
-      - **Long-Term Strategies**: Recommend long-term strategies for server scaling, load balancing, and infrastructure upgrades. Could the server benefit from additional resources or different configuration settings (e.g., CPU cores, RAM)?
-      - **Infrastructure Planning**: Should we consider improving specific components (e.g., adding more storage, optimizing CPU utilization, or improving network throughput)?
-      - **Monitoring Improvements**: Suggest additional metrics that should be monitored to provide better visibility into server health (e.g., adding more detailed memory usage tracking, network latency, etc.).
-      - **Alerting Setup**: Advise on setting up performance alerts for critical thresholds, such as when CPU usage exceeds 85%, memory exceeds 80%, or disk usage hits 90%.
+  3. **Root Cause Diagnosis**:
+    - **Pattern Analysis**: Based on the metrics, what could be the root causes of performance issues? Are there any recurring patterns that point to potential problems (e.g., high load at specific times)?
+    - **Scheduled Jobs or Traffic Impact**: Could scheduled jobs or heavy network traffic be causing temporary performance degradation? 
+    - **Application vs. Infrastructure**: Do the metrics suggest issues at the application level (e.g., inefficient code) or infrastructure level (e.g., insufficient resources)?
+    - **Critical Events**: Are there any isolated critical events or recurring issues that need further investigation?
 
-    Raw Server Metrics:
-    ${metricsText}
+  4. **Actionable Recommendations**:
+    - **Short-Term Recommendations**: Provide immediate fixes or actions to address any current performance issues.
+    - **Medium-Term Optimizations**: Suggest optimizations for resource utilization.
+    - **Long-Term Strategies**: Recommend long-term strategies for server scaling, load balancing, and infrastructure upgrades.
+    - **Infrastructure Planning**: Should we consider improving specific components?
+    - **Monitoring Improvements**: Suggest additional metrics that should be monitored.
+    - **Alerting Setup**: Advise on setting up performance alerts for critical thresholds.
 
-    Please provide a detailed and structured response with specific numerical thresholds in your recommendations, and prioritize suggestions based on severity and potential impact. Ensure clarity in your insights and offer actionable next steps for each area of improvement.
-  `;
+  ### Cross-Server Comparison
+  After analyzing each server individually, please provide:
+
+  5. **Infrastructure-Wide Assessment**:
+    - **Comparative Analysis**: How do the servers compare in terms of resource usage and performance? Which servers are under the most stress?
+    - **Resource Balancing**: Are there opportunities to better balance workloads across servers?
+    - **Common Issues**: Are there any common issues affecting multiple servers that might indicate systemic problems?
+    - **Priority Ranking**: Rank the servers in order of which need the most immediate attention based on their health metrics.
+
+  Raw Server Metrics:
+  ${metricsText}
+
+  Please provide a detailed and structured response with clear separation between each server's analysis. Use the server's hostname as a clear identifier in each section heading. Ensure your recommendations are specific, actionable, and prioritized based on severity.
+`;
 
   // Prepare the request payload for the OpenAI API
   const data = {
