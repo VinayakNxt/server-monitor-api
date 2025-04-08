@@ -210,47 +210,57 @@ async function generateHTMLReport(summary, returnContent = false) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Server Metrics Summary Report</title>
+    <title>Server Metrics Analysis Report</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
-            max-width: 800px;
+            max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-        }
-        h1 {
             color: #333;
-            border-bottom: 2px solid #ddd;
+        }
+        .header {
+            border-bottom: 2px solid #0056b3;
             padding-bottom: 10px;
+            margin-bottom: 20px;
         }
-        .section {
-            background-color: #f4f4f4;
-            border-radius: 5px;
+        .footer {
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+        .highlight {
+            background-color: #f8f9fa;
+            border-left: 4px solid #0056b3;
             padding: 15px;
-            margin-bottom: 15px;
-        }
-        .timestamp {
-            font-size: 0.8em;
-            color: #777;
-            text-align: right;
-        }
-        pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            background-color: #f9f9f9;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-x: auto;
+            margin: 15px 0;
         }
     </style>
 </head>
 <body>
-    <h1>Server Metrics Summary Report</h1>
-    <p class="timestamp">Generated on: ${new Date().toLocaleString()}</p>
-
-    <div class="section">
-        <pre>${summary.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
+    <div class="header">
+        <h2>Server Performance Analysis Report</h2>
+    </div>
+    
+    <p>Hello,</p>
+    
+    <p>Please find attached the detailed Server Health Analysis Report generated on <strong>${new Date().toLocaleString()}</strong>.</p>
+    
+    <div class="highlight">
+        <p>This report contains comprehensive analysis of your server infrastructure performance, including:</p>
+        <ul>
+            <li>Server health assessments</li>
+            <li>Resource utilization trends</li>
+            <li>Detected anomalies and performance issues</li>
+            <li>Prioritized recommendations for optimization</li>
+        </ul>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated report. Please do not reply to this email.</p>
     </div>
 </body>
 </html>
