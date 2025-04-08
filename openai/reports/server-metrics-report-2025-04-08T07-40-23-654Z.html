@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Server Metrics Summary Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #444;
+            margin-top: 20px;
+        }
+        .section {
+            background-color: #f4f4f4;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: #777;
+            text-align: right;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Server Metrics Summary Report</h1>
+    <p class="timestamp">Generated on: 8/4/2025, 1:10:23 pm</p>
+
+    <div class="section">
+        <h2>Full Summary</h2>
+        <pre># Server Analysis Report for Hostname: ubuntu-s-2vcpu-4gb-amd-blr1-01
+
+### 1. Comprehensive Summary
+
+- **Overall Health**: The server is operating within acceptable parameters, with CPU and memory usage remaining relatively low throughout the monitoring period. The disk space is also well within limits, indicating no immediate concerns.
+  
+- **Key Trends**: Resource usage for CPU and memory shows a consistent pattern, with minor fluctuations. CPU usage averages around 2%, while memory usage hovers around 55%. There are no significant spikes in resource consumption, indicating stable performance.
+  
+- **Critical Usage Peaks**: The highest recorded CPU usage was 2.62%, while memory usage peaked at around 55.58%. Disk usage remained constant at about 36%. Network traffic shows peaks up to around 2.8 Gbps for RX and 0.5 Gbps for TX at some points, but overall, traffic levels stay manageable.
+  
+- **Stability Assessment**: The server exhibits stable performance without any significant fluctuations. Resource usage remains steady, indicating a well-performing system under the current workloads.
+
+### 2. Anomalies & Issues
+
+- **Spikes & Drops**: There are no significant spikes in CPU or memory usage that indicate immediate issues. CPU usage occasionally peaks during specific intervals but returns to baseline levels quickly.
+  
+- **Correlated Anomalies**: Network RX and TX rates show minor correlations with CPU load, indicating that increased network activity slightly impacts CPU usage, but these changes are not concerning.
+  
+- **Threshold Approaching**: Memory usage remains below the critical threshold of 90%, and disk usage is also well below 80%. No action is required for threshold monitoring at this time.
+  
+- **Abnormal Network Activity**: Network activity appears normal, with no unusual surges that would indicate a potential issue. The number of connections remains stable, suggesting no DDoS attacks or similar anomalies.
+
+### 3. Root Cause Diagnosis
+
+- **Pattern Analysis**: The resource usage patterns suggest that the server is not under stress. Regular monitoring of the current workloads is sufficient to maintain performance.
+  
+- **Scheduled Jobs or Traffic Impact**: There are no evident scheduled jobs or external traffic influences that seem to affect performance negatively.
+  
+- **Application vs. Infrastructure**: The metrics do not suggest issues at the application level, as there are no indications of inefficient code or excessive resource consumption.
+  
+- **Critical Events**: No isolated critical events were detected during the monitoring period that requires further investigation.
+
+### 4. Actionable Recommendations
+
+- **Short-Term Recommendations**: Continue to monitor the server for any unexpected spikes in resource usage. Set up alerts for CPU usage exceeding 75% or memory usage exceeding 80%.
+  
+- **Medium-Term Optimizations**: Consider reviewing application performance, especially if usage increases. Regularly check for updates and optimizations that can improve resource efficiency.
+  
+- **Long-Term Strategies**: If workload increases in the future, consider adding additional resources (CPU or memory) to the server or implementing load balancing solutions across multiple servers.
+  
+- **Infrastructure Planning**: No immediate upgrades are necessary, but keep an eye on trends in resource usage to anticipate future needs.
+  
+- **Monitoring Improvements**: It is advisable to monitor additional metrics such as disk I/O and detailed application-level metrics for a more comprehensive view of performance.
+  
+- **Alerting Setup**: Implement alerts for critical thresholds as mentioned above, and also for network traffic spikes that exceed historical averages.
+
+---
+
+### Cross-Server Comparison
+
+#### 5. Infrastructure-Wide Assessment
+
+- **Comparative Analysis**: As there is only one server in this analysis, a comparison cannot be made. The server demonstrates stable performance without approaching critical thresholds.
+  
+- **Resource Balancing**: No issues with resource balancing across multiple servers can be identified, as there is only one server to analyze.
+  
+- **Common Issues**: Since this is a single-server analysis, common issues cannot be assessed.
+  
+- **Priority Ranking**: The server's overall health is good, and there are no immediate concerns.
+
+---
+
+Overall, the server is functioning well, and regular monitoring should continue to ensure it remains efficient and effective in its role.</pre>
+    </div>
+</body>
+</html>
+  

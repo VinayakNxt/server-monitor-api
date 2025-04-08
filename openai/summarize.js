@@ -1,6 +1,9 @@
 // openai/summarize.js
 const axios = require("axios");
-require("dotenv").config(); // Load environment variables from .env file
+require("dotenv").config();
+const sendMail = require("./mail"); // Assuming mail.js is in the same directory
+const fs = require('fs').promises;
+const path = require('path');
 
 // Retrieve Azure OpenAI API endpoint and API key from environment variables
 const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
@@ -11,11 +14,17 @@ const apiKey = process.env.AZURE_OPENAI_KEY;
  * @param {Array} metrics - Array of server metrics objects.
  * @returns {Promise<string>} - A detailed summary and recommendations based on the metrics.
  */
-async function summarizeMetrics(metrics) {
+async function summarizeMetrics(metrics, options = {}) {
+  // Default options
+  const config = {
+    saveReport: true,
+    emailReport: true,
+    ...options
+  };
+
   // Step 1: Prepare the metrics for OpenAI API
   let metricsText = "Raw Server Metrics:\n";
-  metrics.forEach((metric) => {
-    // Format each metric into a readable text block
+  metrics.slice(0,200).forEach((metric) => {
     metricsText += `
       Timestamp: ${metric.timestamp}
       Server Hostname: ${metric.server_hostname}
@@ -98,12 +107,12 @@ async function summarizeMetrics(metrics) {
       {
         role: "system",
         content:
-          "You are an assistant that analyzes raw server health data and provides optimization recommendations.",
+          "You are an assistant that analyzes raw server health data and provides comprehensive, actionable optimization recommendations.",
       },
       { role: "user", content: prompt },
     ],
     temperature: 0.7, // Adjusts creativity
-    max_tokens: 1500, // Set to allow detailed response
+    max_tokens: 2000, // Set to allow detailed response
   };
 
   try {
@@ -115,14 +124,139 @@ async function summarizeMetrics(metrics) {
       },
     });
 
-    // Return the generated summary, recommendations, and optimizations
-    return res.data.choices[0].message.content;
+    // Safely extract the summary
+    const summary = res.data.choices[0]?.message?.content || 
+                    "No summary was generated. Please check the API response.";
+
+    // Prepare report results
+    const reportResults = {
+      summary,
+      htmlReportPath: null,
+      emailSent: false
+    };
+
+    // Generate HTML report if saving is enabled
+    if (config.saveReport) {
+      reportResults.htmlReportPath = await generateHTMLReport(summary);
+    }
+
+    // Send email if enabled
+    if (config.emailReport) {
+      // Get HTML content for email
+      const htmlContent = await generateHTMLReport(summary, true);
+
+      try {
+        await sendMail(
+          "vinayak@adaptnxt.com", // Replace with the recipient's email address
+          "Server Metrics Summary Report",
+          "Please find the detailed server metrics summary report below.",
+          htmlContent
+        );
+        reportResults.emailSent = true;
+      } catch (emailError) {
+        console.error("Email sending failed:", emailError);
+        reportResults.emailSent = false;
+      }
+    }
+
+    return reportResults;
   } catch (err) {
-    // Log and return an error message if the API call fails
-    console.error("❌ OpenAI API error:", err.response?.data || err.message);
-    return "Sorry, something went wrong while generating the summary and recommendations.";
+    // Detailed error logging
+    console.error("❌ OpenAI API error:", {
+      status: err.response?.status,
+      data: err.response?.data,
+      message: err.message
+    });
+    
+    // More robust error handling
+    if (err.response) {
+      // The request was made and the server responded with a status code
+      throw new Error(`API Error: ${err.response.status} - ${JSON.stringify(err.response.data)}`);
+    } else if (err.request) {
+      // The request was made but no response was received
+      throw new Error(`No response received: ${err.message}`);
+    } else {
+      // Something happened in setting up the request
+      throw new Error(`Error setting up request: ${err.message}`);
+    }
   }
 }
 
+/**
+ * Generates an HTML report from the OpenAI summary
+ * @param {string} summary - The summary text from OpenAI
+ * @returns {Promise<string>} - Path to the generated HTML report
+ */
+async function generateHTMLReport(summary, returnContent = false) {
+  // Create a structured HTML report
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Server Metrics Summary Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .section {
+            background-color: #f4f4f4;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: #777;
+            text-align: right;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Server Metrics Summary Report</h1>
+    <p class="timestamp">Generated on: ${new Date().toLocaleString()}</p>
+
+    <div class="section">
+        <pre>${summary.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+    </div>
+</body>
+</html>
+  `;
+
+  // If returning content, skip file creation
+  if (returnContent) {
+    return htmlContent;
+  }
+
+  // Ensure reports directory exists
+  const reportsDir = path.join(__dirname, 'reports');
+  await fs.mkdir(reportsDir, { recursive: true });
+
+  // Generate unique filename
+  const timestamp = new Date().toISOString().replace(/[:\.]/g, '-');
+  const htmlFilePath = path.join(reportsDir, `server-metrics-report-${timestamp}.html`);
+  
+  // Write HTML file
+  await fs.writeFile(htmlFilePath, htmlContent);
+
+  return htmlFilePath;
+}
 // Export the summarizeMetrics function for use in other modules
 module.exports = summarizeMetrics;

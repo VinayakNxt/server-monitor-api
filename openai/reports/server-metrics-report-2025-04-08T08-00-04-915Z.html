@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Server Metrics Summary Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .section {
+            background-color: #f4f4f4;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: #777;
+            text-align: right;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Server Metrics Summary Report</h1>
+    <p class="timestamp">Generated on: 8/4/2025, 1:30:04 pm</p>
+
+    <div class="section">
+        <pre># Server Performance Analysis
+
+## Server: ubuntu-s-2vcpu-4gb-amd-blr1-01
+
+### 1. Comprehensive Summary
+- **Overall Health**: The server shows stable performance with consistent resource utilization around 2% CPU and 55% memory usage. Disk usage remains at 36%, indicating ample space available. Network performance has been steady, with occasional spikes in traffic.
+  
+- **Key Trends**: 
+  - CPU usage fluctuates between 1.77% and 2.67%, indicating low processing load.
+  - Memory usage remains around 54-55%, suggesting sufficient memory is available.
+  - Network traffic shows variability, particularly in RX rates peaking multiple times.
+
+- **Critical Usage Peaks**: 
+  - The highest CPU usage recorded was 2.67%, which is well below critical thresholds.
+  - Memory usage peaked at around 55.69%, still within safe operational limits.
+  - Network RX rates peaked notably at 258.62 MB/sec, indicating periods of high inbound traffic.
+
+- **Stability Assessment**: The server demonstrates consistent performance with no major fluctuations in resource utilization. There are no signs of resource exhaustion or instability.
+
+### 2. Anomalies & Issues
+- **Spikes & Drops**: 
+  - CPU usage spikes occur intermittently but do not exceed 3%. This suggests that the server can handle bursts of activity effectively.
+  - Minor variations in memory usage are observed but remain within acceptable limits.
+
+- **Correlated Anomalies**: 
+  - Peaks in CPU usage occasionally correlate with higher network RX rates, indicating that increased network traffic may drive CPU demand.
+
+- **Threshold Approaching**: 
+  - No metrics are approaching critical thresholds. CPU usage consistently stays below 3%, memory usage remains under 60%, and disk usage is stable.
+
+- **Abnormal Network Activity**: 
+  - The server experiences periodic spikes in incoming network traffic, but this is not indicative of issues as it remains manageable.
+
+### 3. Root Cause Diagnosis
+- **Pattern Analysis**: The resource usage patterns suggest that the server is effectively managing load, with no recurring issues indicating a need for concern.
+
+- **Scheduled Jobs or Traffic Impact**: Variations in CPU and network usage may correlate with scheduled jobs or periods of high user demand, but no specific jobs were identified in the data provided.
+
+- **Application vs. Infrastructure**: Resource metrics suggest that the infrastructure is sufficient for current application demands, with no observable performance bottlenecks.
+
+- **Critical Events**: There are no critical events or issues that require immediate attention.
+
+### 4. Actionable Recommendations
+- **Short-Term Recommendations**: 
+  - Continue monitoring CPU and network performance during peak hours to ensure no unexpected performance degradation occurs.
+  
+- **Medium-Term Optimizations**: 
+  - Consider load testing during peak times to ensure application responsiveness under higher loads.
+  - Analyze network traffic patterns to optimize bandwidth usage during busy periods.
+
+- **Long-Term Strategies**: 
+  - Evaluate the potential for scaling resources if consistent traffic increases are noted.
+  - Implement load balancing if future traffic demands increase significantly.
+
+- **Infrastructure Planning**: 
+  - No immediate infrastructure upgrades are necessary, but continuous monitoring is recommended.
+
+- **Monitoring Improvements**: 
+  - Additional metrics to monitor could include latency, error rates, and specific application performance metrics to gauge user experience better.
+
+- **Alerting Setup**: 
+  - Set up alerts for CPU usage exceeding 80%, memory usage over 90%, and disk usage over 80% to proactively manage risks.
+
+---
+
+# Infrastructure-Wide Assessment
+
+### 5. Comparative Analysis
+- **Comparative Analysis**: The server ubuntu-s-2vcpu-4gb-amd-blr1-01 shows efficient resource utilization compared to expected norms. Other servers (not provided in this instance) should be assessed similarly to determine if they face similar performance levels, or if one is under more significant strain.
+
+- **Resource Balancing**: 
+  - If other servers show higher CPU or memory usage, consider redistributing workloads to balance the load across servers.
+
+- **Common Issues**: 
+  - If multiple servers exhibit similar peak resource usage, this may signify a need for infrastructure scaling or optimization.
+
+- **Priority Ranking**: 
+  - Based on the current data, this server requires no immediate attention, but continual performance monitoring is advised to preemptively address any emerging issues.
+
+---
+
+This analysis provides a comprehensive overview of the health and performance of the server. Recommendations are tailored to ensure optimization and readiness for any future demands.</pre>
+    </div>
+</body>
+</html>
+  
