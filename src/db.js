@@ -46,9 +46,6 @@ async function fetchMetricsFromDB() {
     // Execute a query to fetch all rows from the 'metrics' table
     const res = await client.query('SELECT * FROM metrics');  // Replace 'metrics' with your actual table name
 
-    // Close the database connection after the query
-    await client.end();
-
     // Return the fetched rows as an array
     return res.rows;
   } catch (err) {
