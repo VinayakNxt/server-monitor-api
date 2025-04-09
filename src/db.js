@@ -20,12 +20,16 @@ const client = new Client({
 let isConnected = false;
 
 // Function to ensure database connection
+// This function checks if the database connection is already established.
+// If not, it attempts to connect to the database.
 async function ensureConnection() {
   if (!isConnected) {
     try {
+      // Attempt to connect to the database
       await client.connect();
-      isConnected = true;
+      isConnected = true; // Update connection state
     } catch (err) {
+      // Log and rethrow any connection errors
       console.error('Error connecting to database:', err);
       throw err;
     }
@@ -33,15 +37,16 @@ async function ensureConnection() {
 }
 
 // Function to fetch server metrics from the database
+// This function retrieves all rows from the 'metrics' table in the database.
 async function fetchMetricsFromDB() {
   try {
-    // Connect to the PostgreSQL database
+    // Ensure the database connection is established
     await ensureConnection();
 
     // Execute a query to fetch all rows from the 'metrics' table
     const res = await client.query('SELECT * FROM metrics');  // Replace 'metrics' with your actual table name
 
-    // Close the database connection
+    // Close the database connection after the query
     await client.end();
 
     // Return the fetched rows as an array
@@ -55,16 +60,21 @@ async function fetchMetricsFromDB() {
   }
 }
 
+// Function to close the database connection
+// This function ensures the database connection is properly closed.
 async function closeConnection() {
   if (isConnected) {
     try {
+      // Attempt to close the database connection
       await client.end();
-      isConnected = false;
+      isConnected = false; // Update connection state
     } catch (err) {
+      // Log any errors that occur while closing the connection
       console.error('Error closing database connection:', err);
     }
   }
 }
 
-// Export the fetchMetricsFromDB function for use in other modules
+// Export the fetchMetricsFromDB and closeConnection functions
+// These functions can be used in other modules to interact with the database.
 module.exports = { fetchMetricsFromDB, closeConnection };
