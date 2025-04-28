@@ -43,8 +43,14 @@ async function fetchMetricsFromDB() {
     // Ensure the database connection is established
     await ensureConnection();
 
-    // Execute a query to fetch all rows from the 'metrics' table
-    const res = await client.query('SELECT * FROM metrics');  // Replace 'metrics' with your actual table name
+    /**
+     * Executes a SQL query to retrieve all metrics from the database
+     * where the timestamp is within the last 7 days.
+     */
+    const res = await client.query(`
+      SELECT * FROM metrics
+      WHERE timestamp >= NOW() - INTERVAL '7 days'
+    `);
 
     // Return the fetched rows as an array
     return res.rows;

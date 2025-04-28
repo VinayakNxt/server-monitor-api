@@ -25,7 +25,7 @@ async function summarizeMetrics(metrics, options = {}) {
 
   // Step 1: Prepare the metrics for OpenAI API
   let metricsText = "Raw Server Metrics:\n";
-  metrics.slice(0, 400).forEach((metric) => {
+  metrics.forEach((metric) => {
     // Format each metric into a readable text block
     metricsText += `
       Timestamp: ${metric.timestamp}

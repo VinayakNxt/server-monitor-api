@@ -18,7 +18,7 @@ app.use("/api", summaryRoute); // Use the summary route for API endpoints
 app.get("/", (req, res) => res.send("Server Monitor API Running ✅")); // Health check endpoint
 
 // Weekly metrics summary cron job
-const cronJob = cron.schedule('0 12 * * 0', async () => { // Schedule job to run every Sunday at 12:00 PM
+const cronJob = cron.schedule('0 0 * * 0', async () => { // Schedule job to run every Sunday at 12:00 AM
   console.log("Starting the weekly server metrics summary...");
   
   try {
