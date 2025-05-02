@@ -26,7 +26,7 @@ async function sendMail(subject, text, html, attachmentPath = null) {
     try {
         const mailOptions = {
             from: process.env.MAIL_USER, // Sender email address
-            to: process.env.MAIL_TO, // Recipient email address
+            to: process.env.MAIL_TO.split(','), // Recipient email address
             subject: subject, // Email subject
             text: text, // Plain text content
             html: html // HTML content
