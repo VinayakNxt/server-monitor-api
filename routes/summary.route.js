@@ -1,6 +1,6 @@
 // routes/summary.route.js
 const express = require('express');
-const { fetchMetricsFromDB } = require('../src/db'); // Import the function to fetch metrics from the database
+const { fetchMetricsFromDBByHostname, getUniqueHostnames } = require('../src/db'); // Import the function to fetch metrics from the database
 const summarizeMetrics = require('../openai/summarize'); // Import the function to summarize metrics using OpenAI
 
 const router = express.Router();
@@ -8,26 +8,44 @@ const router = express.Router();
 // Route to handle summary request
 router.post('/summary', async (req, res) => {
   try {
-    // Fetch metrics from the database
-    const metrics = await fetchMetricsFromDB();
+    // Step 1: Get all unique hostnames from the DB
+    const hostnames = await getUniqueHostnames();
 
-    // If no metrics are found, return a 404 error response
-    if (metrics.length === 0) {
-      return res.status(404).json({ error: 'No metrics data found.' });
+    if (!hostnames || hostnames.length === 0) {
+      return res.status(404).json({ error: 'No hostnames found.' });
     }
 
-    // Send the fetched metrics to OpenAI for summarization
-    const summary = await summarizeMetrics(metrics);
+    const results = [];
 
-    // Return the generated summary in the response
+    // Step 2: Loop through each hostname, fetch metrics, summarize
+    for (const hostname of hostnames) {
+      const metrics = await fetchMetricsFromDBByHostname(hostname);
+      console.log(`📊 Fetched ${metrics.length} metrics for ${hostname}`);
+
+      if (metrics && metrics.length > 0) {
+        const summary = await summarizeMetrics(metrics);
+
+        results.push({
+          hostname,
+          summary
+        });
+      } else {
+        results.push({
+          hostname,
+          summary: 'No metrics available for this host.'
+        });
+      }
+    }
+
+    // Step 3: Send all summaries back
     res.json({
       status: 'success',
-      summary,
+      results
     });
+
   } catch (error) {
-    // Log the error and return a 500 error response in case of failure
     console.error('Error in summary route:', error);
-    res.status(500).json({ error: 'Failed to generate summary and recommendations.' });
+    res.status(500).json({ error: 'Failed to generate summaries.' });
   }
 });
 

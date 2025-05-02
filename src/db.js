@@ -36,9 +36,34 @@ async function ensureConnection() {
   }
 }
 
+/**
+ * Fetches a list of unique server hostnames from the database.
+ *
+ * This function ensures a connection to the database, executes a query to
+ * retrieve distinct server hostnames from the "metrics" table, and returns
+ * the results as an array of strings. If an error occurs during the process,
+ * it logs the error and returns an empty array.
+ *
+ * @async
+ * @function
+ * @returns {Promise<string[]>} A promise that resolves to an array of unique server hostnames.
+ *                              Returns an empty array if an error occurs.
+ */
+async function getUniqueHostnames() {
+  try {
+    await ensureConnection();
+
+    const res = await client.query(`SELECT DISTINCT server_hostname FROM metrics`);
+    return res.rows.map(row => row.server_hostname);
+  } catch (err) {
+    console.error('Error fetching hostnames from DB:', err);
+    return [];
+  }
+}
+
 // Function to fetch server metrics from the database
 // This function retrieves all rows from the 'metrics' table in the database.
-async function fetchMetricsFromDB() {
+async function fetchMetricsFromDBByHostname(hostname) {
   try {
     // Ensure the database connection is established
     await ensureConnection();
@@ -50,7 +75,8 @@ async function fetchMetricsFromDB() {
     const res = await client.query(`
       SELECT * FROM metrics
       WHERE timestamp >= NOW() - INTERVAL '7 days'
-    `);
+      AND server_hostname = $1
+    `, [hostname]);
 
     // Return the fetched rows as an array
     return res.rows;
@@ -80,4 +106,4 @@ async function closeConnection() {
 
 // Export the fetchMetricsFromDB and closeConnection functions
 // These functions can be used in other modules to interact with the database.
-module.exports = { fetchMetricsFromDB, closeConnection };
+module.exports = { fetchMetricsFromDBByHostname, closeConnection, getUniqueHostnames };

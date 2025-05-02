@@ -28,31 +28,12 @@ async function summarizeMetrics(metrics, options = {}) {
   metrics.forEach((metric) => {
     // Format each metric into a readable text block
     metricsText += `
-      Timestamp: ${metric.timestamp}
       Server Hostname: ${metric.server_hostname}
+      Timestamp: ${metric.timestamp}
       CPU Usage: ${metric.cpu_usage}%
-      CPU Cores: ${metric.cpu_cores}
-      CPU Model: ${metric.cpu_model}
-      CPU Speed: ${metric.cpu_speed} GHz
-      CPU Load (1m): ${metric.cpu_load_1m}
-      CPU Load (5m): ${metric.cpu_load_5m}
-      CPU Load (15m): ${metric.cpu_load_15m}
-      Memory Total: ${metric.memory_total} bytes
-      Memory Free: ${metric.memory_free} bytes
       Memory Used: ${metric.memory_used} bytes
-      Memory Percentage: ${metric.memory_percentage}%
-      Disk Filesystem: ${metric.disk_filesystem}
-      Disk Size: ${metric.disk_size} bytes
       Disk Used: ${metric.disk_used} bytes
-      Disk Available: ${metric.disk_available} bytes
-      Disk Percentage: ${metric.disk_percentage}%
-      Network Interface: ${metric.network_interface}
-      Network RX Bytes: ${metric.network_rx_bytes} bytes
-      Network TX Bytes: ${metric.network_tx_bytes} bytes
       Network RX Rate: ${metric.network_rx_rate} bytes/sec
-      Network TX Rate: ${metric.network_tx_rate} bytes/sec
-      Network Connections: ${metric.network_connections}
-      Created At: ${metric.created_at}
     `;
   });
 
