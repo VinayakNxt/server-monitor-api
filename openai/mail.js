@@ -10,6 +10,9 @@ const transporter = nodemailer.createTransport({
         user: process.env.MAIL_USER, // SMTP username
         pass: process.env.MAIL_PASSWORD, // SMTP password
     },
+    tls: {
+        rejectUnauthorized: false, // <---- allow self-signed certs
+    }
 });
 
 // Function to send an email

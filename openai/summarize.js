@@ -30,10 +30,11 @@ async function summarizeMetrics(metrics, options = {}) {
     metricsText += `
       Server Hostname: ${metric.server_hostname}
       Timestamp: ${metric.timestamp}
-      CPU Usage: ${metric.cpu_usage}%
-      Memory Used: ${metric.memory_used} bytes
-      Disk Used: ${metric.disk_used} bytes
-      Network RX Rate: ${metric.network_rx_rate} bytes/sec
+      CPU: ${metric.cpu_usage}%
+      Memory(%): ${metric.memory_percentage} %
+      Disk(%): ${metric.disk_percentage} %
+      NET RX/TX: ${metric.network_rx_rate}/${metric.network_tx_rate} Bps | Total: ${metric.network_rx_bytes}/${metric.network_tx_bytes}
+      Conn: ${metric.network_connections}
     `;
   });
 
