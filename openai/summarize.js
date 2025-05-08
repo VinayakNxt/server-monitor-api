@@ -2,9 +2,9 @@ const axios = require("axios");
 require("dotenv").config();
 const sendMail = require("./mail"); // Assuming mail.js is in the same directory
 const fs = require("fs").promises;
-const fsSync = require("fs");
 const path = require("path");
-const { jsPDF } = require("jspdf"); // Import jsPDF for PDF generation
+const { marked } = require("marked");
+const puppeteer = require("puppeteer");
 
 // Retrieve Azure OpenAI API endpoint and API key from environment variables
 const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
@@ -63,29 +63,6 @@ async function summarizeMetrics(metrics, options = {}) {
   Output Format:
   Host ID: [Server Hostname and please highlight the HOST ID by providing some color to it]
   [Concise 5-7 line summary with key insights and recommendations]
-
-  1. Anomalies & Issues:
-    - Spikes & Drops: Identify any sudden spikes or drops in resource usage (CPU, memory, disk, network) and their potential causes.
-    - Correlated Anomalies: Correlate anomalies across multiple metrics (e.g., a CPU spike with a memory usage increase). Are there any patterns or repeated events?
-    - Threshold Approaching: Identify any metrics that are approaching critical thresholds (e.g., CPU usage over 80%, memory over 90%, disk nearing full capacity).
-    - Abnormal Network Activity: Look for unusual network activity, like spikes in incoming/outgoing traffic or too many network connections.
-
-  2. Root Cause Diagnosis:
-    - Pattern Analysis: Based on the metrics, what could be the root causes of performance issues? Are there any recurring patterns that point to potential problems (e.g., high load at specific times)?
-    - Scheduled Jobs or Traffic Impact: Could scheduled jobs or heavy network traffic be causing temporary performance degradation? 
-    - Application vs. Infrastructure: Do the metrics suggest issues at the application level (e.g., inefficient code) or infrastructure level (e.g., insufficient resources)?
-    - Critical Events: Are there any isolated critical events or recurring issues that need further investigation?
-
-  3. Actionable Recommendations:
-    - Short-Term Recommendations: Provide immediate fixes or actions to address any current performance issues.
-    - Medium-Term Optimizations: Suggest optimizations for resource utilization.
-    - Long-Term Strategies: Recommend long-term strategies for server scaling, load balancing, and infrastructure upgrades.
-    - Infrastructure Planning: Should we consider improving specific components?
-    - Monitoring Improvements: Suggest additional metrics that should be monitored.
-    - Alerting Setup: Advise on setting up performance alerts for critical thresholds.
-
-  Host ID: [Next Server Hostname and please highlight the HOST ID by providing some color to it]
-  [Concise 5-7 line summary for the next server]
 
   1. Anomalies & Issues:
     - Spikes & Drops: Identify any sudden spikes or drops in resource usage (CPU, memory, disk, network) and their potential causes.
@@ -297,198 +274,88 @@ async function generateHTMLReport(summary, returnContent = false) {
 async function generatePDFReport(aiResponse, options = {}) {
   // Default configuration
   const config = {
-    titlePrefix: 'Infrastructure Performance Insights',
-    outputMode: 'file', // 'file' or 'buffer'
+    titlePrefix: "Infrastructure Performance Insights",
+    outputMode: "file", // 'file' or 'buffer'
     fontConfig: {
-      mainFont: 'helvetica',
+      mainFont: "helvetica",
       titleFontSize: 16,
       normalFontSize: 12,
-      contentFontSize: 11
+      contentFontSize: 11,
     },
     colorConfig: {
       titleColor: [0, 51, 102], // Dark blue
-      normalColor: [0, 0, 0],   // Black
-      footerColor: [100, 100, 100] // Gray
+      normalColor: [0, 0, 0], // Black
+      footerColor: [100, 100, 100], // Gray
     },
-    ...options
+    ...options,
   };
 
-  // Create a new PDF document
-  const doc = new jsPDF();
-  doc.setFont(config.fontConfig.mainFont);
-  doc.setFontSize(config.fontConfig.normalFontSize);
+  // Convert Markdown to HTML using marked
+  const htmlBody = marked.parse(aiResponse);
 
-  // Robust parsing of AI response
-  function parseServerSections(response) {
-    // Multiple parsing strategies to handle different AI response formats
-    const parsingStrategies = [
-      // Strategy 1: Split by explicit server section markers
-      () => response.split(/###\s*Server\s*(?:Analysis|Report)\s*for/i)
-        .filter(section => section.trim().length > 0),
-      
-      // Strategy 2: Split by hostname or server names
-      () => {
-        // Look for server identifiers (common patterns)
-        const serverSplitRegex = /\b(Server|Host|Node)(?:\s*Name)?:\s*([^\n]+)/gi;
-        const matches = [...response.matchAll(serverSplitRegex)];
-        
-        if (matches.length > 0) {
-          return matches.map(match => {
-            // Find the content for this server
-            const serverName = match[2].trim();
-            const serverContentRegex = new RegExp(`${serverName}[^\n]*\\n(.*?)(?=\\n\\w+:|$)`, 's');
-            const contentMatch = response.match(serverContentRegex);
-            return contentMatch ? contentMatch[1].trim() : '';
-          }).filter(section => section.length > 0);
+  const fullHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Server Metrics Report</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          padding: 20px;
+          line-height: 1.6;
         }
-        
-        // Fallback: return entire response as a single section
-        return [response];
-      },
-      
-      // Strategy 3: Split by paragraphs if all else fails
-      () => {
-        // Split into paragraphs and filter out very short ones
-        return response.split(/\n\s*\n/)
-          .filter(p => p.trim().length > 50);
-      }
-    ];
-
-    // Try parsing strategies until we get a valid result
-    for (const strategy of parsingStrategies) {
-      try {
-        const sections = strategy();
-        if (sections.length > 0) {
-          return sections;
+        h1, h2, h3 {
+          color: #003366;
         }
-      } catch (error) {
-        console.warn('Parsing strategy failed:', error);
-      }
-    }
+        pre {
+          background-color: #f4f4f4;
+          padding: 10px;
+          overflow: auto;
+        }
+        code {
+          background-color: #eee;
+          padding: 2px 4px;
+          border-radius: 4px;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>Infrastructure Performance Insights</h1>
+      <p><strong>Report generated:</strong> ${new Date().toLocaleDateString()}</p>
+      <hr />
+      ${htmlBody}
+    </body>
+    </html>
+  `;
 
-    // If all strategies fail, use entire response
-    return [response];
-  }
+  // Launch headless browser
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
 
-  // Extract server name or use a generic name
-  function extractServerName(section) {
-    // Try multiple methods to extract server name, prioritizing Host ID
-    const namePatterns = [
-      /Host ID:\s*\[([^\]]+)\]/i,   // Match Host ID: [server-name]
-      /Host ID:\s*([^\n]+)/i,       // Match Host ID: server-name
-      /`([^`]+)`/,                  // Markdown code block
-      /Server Name:\s*([^\n]+)/i,   // Original patterns
-      /Host(?:name)?:\s*([^\n]+)/i  // Original patterns
-    ];
+  await page.setContent(fullHTML, { waitUntil: "networkidle0" });
 
-    for (const pattern of namePatterns) {
-      const match = section.match(pattern);
-      if (match) {
-        return match[1].trim();
-      }
-    }
+  // Create reports directory if needed
+  const reportsDir = path.join(__dirname, "reports");
+  await fs.mkdir(reportsDir, { recursive: true });
 
-    return 'Unknown Server';
-  }
+  const timestamp = new Date().toISOString().replace(/[:\.]/g, "-");
+  const pdfPath = path.join(
+    reportsDir,
+    `server-metrics-report-${timestamp}.pdf`
+  );
 
-  // Process server sections
-  const serverSections = parseServerSections(aiResponse);
-
-  serverSections.forEach((section, index) => {
-    // Add new page for subsequent servers
-    if (index > 0) {
-      doc.addPage();
-    }
-
-    // Extract server name
-    const serverName = extractServerName(section);
-
-    // Add title
-    doc.setFontSize(config.fontConfig.titleFontSize);
-    doc.setFont(config.fontConfig.mainFont, "bold");
-    doc.setTextColor(...config.colorConfig.titleColor);
-    doc.text(`${config.titlePrefix}`, 20, 20);
-
-    // Add date
-    doc.setFontSize(10);
-    doc.setFont(config.fontConfig.mainFont, "normal");
-    doc.text(`Report generated: ${new Date().toLocaleDateString()}`, 20, 30);
-
-    // Add divider line
-    doc.setDrawColor(200, 200, 200);
-    doc.line(20, 35, 190, 35);
-
-    // Process report content
-    let yPosition = 45;
-    
-    // Split content into lines, handling potential different formats
-    const contentLines = doc.splitTextToSize(section, 170);
-
-    doc.setFontSize(config.fontConfig.contentFontSize);
-    doc.setFont(config.fontConfig.mainFont, "normal");
-    doc.setTextColor(...config.colorConfig.normalColor);
-
-    contentLines.forEach(line => {
-      // Add page if near bottom
-      if (yPosition > 270) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      doc.text(line, 20, yPosition);
-      yPosition += 7;
-    });
-
-    // Add footer
-    doc.setFontSize(10);
-    doc.setFont(config.fontConfig.mainFont, "italic");
-    doc.setTextColor(...config.colorConfig.footerColor);
-    doc.text("Confidential - For internal use only", 20, 285);
+  await page.pdf({
+    path: config.outputMode === "file" ? pdfPath : undefined,
+    format: "A4",
+    printBackground: true,
   });
 
-  // Generate PDF data
-  const pdfData = doc.output('arraybuffer');
-  
-  // Handle output mode
-  if (config.outputMode === 'buffer') {
-    return Buffer.from(pdfData);
-  }
+  await browser.close();
 
-  // File output (default)
-  try {
-    // Ensure reports directory exists
-    const reportsDir = path.resolve(__dirname, 'reports');
-    await fs.mkdir(reportsDir, { recursive: true });
-    
-    // Generate unique filename with timestamp
-    const timestamp = new Date().toISOString().replace(/[:\.]/g, '-');
-    const pdfFilePath = path.join(reportsDir, `server-health-report-${timestamp}.pdf`);
-    
-    // Write PDF file
-    await fs.writeFile(pdfFilePath, Buffer.from(pdfData));
-    
-    return pdfFilePath;
-  } catch (error) {
-    // Enhanced error handling
-    console.error(`PDF generation error: ${error.message}`);
-    
-    // Fallback to system temp directory
-    const os = require('os');
-    const tempDir = path.join(os.tmpdir(), 'server-reports');
-    
-    try {
-      await fs.mkdir(tempDir, { recursive: true });
-      
-      const timestamp = new Date().toISOString().replace(/[:\.]/g, '-');
-      const fallbackPath = path.join(tempDir, `server-health-report-${timestamp}.pdf`);
-      
-      await fs.writeFile(fallbackPath, Buffer.from(pdfData));
-      
-      return fallbackPath;
-    } catch (fallbackError) {
-      console.error(`Fallback save failed: ${fallbackError.message}`);
-      throw new Error(`Failed to save PDF report: ${error.message}`);
-    }
-  }
+  return config.outputMode === "file"
+    ? pdfPath
+    : await page.pdf({ format: "A4", printBackground: true });
 }
 
 module.exports = summarizeMetrics;
